@@ -34,11 +34,6 @@ migrate_working_dir/
 /linux/
 /coverage/
 
-# Flutter metadata
-.metadata
-
-# Pub lock file
-pubspec.lock
 
 # Symbolication related
 app.*.symbols
