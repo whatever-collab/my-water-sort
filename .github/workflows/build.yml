@@ -45,10 +45,12 @@ jobs:
           flutter build apk --release --split-per-abi
           flutter build appbundle --release
 
-      - name: Upload Ubuntu Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload Artifacts to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: ubuntu-artifacts
-          path: |
+          tag_name: ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
+          generate_release_notes: true
+          files: |
             build/app/outputs/flutter-apk/*.apk
             build/app/outputs/bundle/release/*.aab
