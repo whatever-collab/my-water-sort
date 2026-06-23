@@ -1,0 +1,21 @@
+# Water Sort
+
+A relaxing and addictive color-sorting puzzle game built with Flutter.
+
+## About
+
+Sort the colored water in the tubes until each tube contains only one color. Simple to learn, challenging to master.
+
+## Features
+
+- **Infinite Levels** — Endless procedurally generated puzzles. No level cap, no waiting, no energy system. Play as long as you want.
+- **100% Offline** — Works entirely offline. No internet required, no data collected.
+- **Zero Tracking** — No analytics, no trackers, no fingerprints. Your gameplay stays on your device.
+- **Ad-Free** — No banner ads, no interstitials, no rewarded videos. Just pure gameplay.
+- **Privacy First** — No permissions required beyond basic storage. No network access. Your data never leaves your phone.
+- **Clean UI** — Minimalist design with smooth animations and a relaxing color palette.
+
+
+## License
+
+GPL v3

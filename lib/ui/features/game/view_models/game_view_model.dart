@@ -1,0 +1,241 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:watersort/data/repositories/progress_repository.dart';
+import 'package:watersort/domain/models/game_level.dart';
+import 'package:watersort/domain/models/tube.dart';
+import 'package:watersort/domain/use_cases/level_generator.dart';
+
+@immutable
+class GameViewModelState {
+  const GameViewModelState({
+    this.level,
+    this.isLoading = false,
+    this.isComplete = false,
+    this.selectedTubeIndex,
+    this.pouringFromIndex,
+    this.pouringToIndex,
+    this.moveCount = 0,
+    this.error,
+    this.isRandomMode = false,
+    this.randomDifficulty,
+    this.randomSeed,
+  });
+
+  final GameLevel? level;
+  final bool isLoading;
+  final bool isComplete;
+  final int? selectedTubeIndex;
+  final int? pouringFromIndex;
+  final int? pouringToIndex;
+  final int moveCount;
+  final String? error;
+  final bool isRandomMode;
+  final String? randomDifficulty;
+  final int? randomSeed;
+
+  GameViewModelState copyWith({
+    GameLevel? level,
+    bool? isLoading,
+    bool? isComplete,
+    int? Function()? selectedTubeIndex,
+    int? Function()? pouringFromIndex,
+    int? Function()? pouringToIndex,
+    int? moveCount,
+    String? error,
+    bool? isRandomMode,
+    String? randomDifficulty,
+    int? randomSeed,
+  }) {
+    return GameViewModelState(
+      level: level ?? this.level,
+      isLoading: isLoading ?? this.isLoading,
+      isComplete: isComplete ?? this.isComplete,
+      selectedTubeIndex:
+          selectedTubeIndex != null ? selectedTubeIndex() : this.selectedTubeIndex,
+      pouringFromIndex:
+          pouringFromIndex != null ? pouringFromIndex() : this.pouringFromIndex,
+      pouringToIndex:
+          pouringToIndex != null ? pouringToIndex() : this.pouringToIndex,
+      moveCount: moveCount ?? this.moveCount,
+      error: error,
+      isRandomMode: isRandomMode ?? this.isRandomMode,
+      randomDifficulty: randomDifficulty ?? this.randomDifficulty,
+      randomSeed: randomSeed ?? this.randomSeed,
+    );
+  }
+}
+
+class GameViewModel extends StateNotifier<GameViewModelState> {
+  GameViewModel({
+    required this._progressRepository,
+    required this._levelGenerator,
+  }) : super(const GameViewModelState());
+
+  final ProgressRepository _progressRepository;
+  final LevelGenerator _levelGenerator;
+
+  Future<void> loadLevel(int levelNumber) async {
+    state = const GameViewModelState(isLoading: true);
+
+    try {
+      final level = _levelGenerator.generate(levelNumber);
+      state = GameViewModelState(level: level);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Failed to load level: $e');
+    }
+  }
+
+  Future<void> loadRandomLevel(String difficulty, {int? seed}) async {
+    final int levelSeed = seed ?? DateTime.now().millisecondsSinceEpoch;
+    state = GameViewModelState(
+      isLoading: true,
+      isRandomMode: true,
+      randomDifficulty: difficulty,
+      randomSeed: levelSeed,
+    );
+
+    try {
+      int colorCount = 3;
+      if (difficulty == 'Medium') {
+        colorCount = 6;
+      } else if (difficulty == 'Hard') {
+        colorCount = 9;
+      } else if (difficulty == 'Super Hard') {
+        colorCount = 12;
+      }
+
+      final level = _levelGenerator.generateRandom(
+        colorCount: colorCount,
+        seed: levelSeed,
+      );
+
+      state = state.copyWith(
+        level: level,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to load random level: $e',
+      );
+    }
+  }
+
+  bool isValidPour(int fromIndex, int toIndex) {
+    if (state.level == null) return false;
+    if (fromIndex == toIndex) return false;
+    if (fromIndex < 0 || fromIndex >= state.level!.tubes.length) return false;
+    if (toIndex < 0 || toIndex >= state.level!.tubes.length) return false;
+
+    final fromTube = state.level!.tubes[fromIndex];
+    final toTube = state.level!.tubes[toIndex];
+
+    if (fromTube.isEmpty || toTube.isFull) return false;
+
+    final colorToMove = fromTube.topColor!;
+    return toTube.canReceive(colorToMove);
+  }
+
+  void selectTube(int index) {
+    if (state.isComplete || state.level == null || state.pouringFromIndex != null) return;
+
+    if (state.selectedTubeIndex == null) {
+      if (!state.level!.tubes[index].isEmpty) {
+        HapticFeedback.lightImpact();
+        state = state.copyWith(selectedTubeIndex: () => index);
+      }
+    } else {
+      if (state.selectedTubeIndex == index) {
+        HapticFeedback.lightImpact();
+        state = state.copyWith(selectedTubeIndex: () => null);
+      } else {
+        if (isValidPour(state.selectedTubeIndex!, index)) {
+          _pourWater(state.selectedTubeIndex!, index);
+        } else {
+          // If tap on another non-empty tube and we can't pour there, select that one instead
+          if (!state.level!.tubes[index].isEmpty) {
+            HapticFeedback.lightImpact();
+            state = state.copyWith(selectedTubeIndex: () => index);
+          } else {
+            HapticFeedback.lightImpact();
+            state = state.copyWith(selectedTubeIndex: () => null);
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _pourWater(int fromIndex, int toIndex) async {
+    if (state.level == null) return;
+
+    HapticFeedback.mediumImpact();
+
+    final fromTube = state.level!.tubes[fromIndex];
+    final toTube = state.level!.tubes[toIndex];
+
+    final colorToMove = fromTube.topColor!;
+    
+    int countToMove = 0;
+    for (int i = fromTube.colors.length - 1; i >= 0; i--) {
+      if (fromTube.colors[i] == colorToMove) {
+        countToMove++;
+      } else {
+        break;
+      }
+    }
+
+    final availableSpace = toTube.capacity - toTube.colors.length;
+    final pourCount = countToMove.clamp(0, availableSpace);
+
+    if (pourCount == 0) {
+      state = state.copyWith(
+        selectedTubeIndex: () => null,
+      );
+      return;
+    }
+
+    final newFromColors = List<Color>.from(fromTube.colors)
+      ..removeRange(fromTube.colors.length - pourCount, fromTube.colors.length);
+    final newToColors = List<Color>.from(toTube.colors)
+      ..addAll(List.filled(pourCount, colorToMove));
+
+    final newTubes = List<Tube>.from(state.level!.tubes);
+    newTubes[fromIndex] = fromTube.copyWith(colors: newFromColors);
+    newTubes[toIndex] = toTube.copyWith(colors: newToColors);
+
+    final newLevel = state.level!.copyWith(tubes: newTubes);
+    final isComplete = newLevel.isComplete;
+
+    if (isComplete) {
+      HapticFeedback.heavyImpact();
+    }
+
+    state = state.copyWith(
+      level: newLevel,
+      moveCount: state.moveCount + 1,
+      selectedTubeIndex: () => null,
+      isComplete: isComplete,
+    );
+  }
+
+  Future<void> completeLevel() async {
+    if (state.level == null || !state.isComplete) return;
+    if (state.isRandomMode) {
+      await _progressRepository.addRandomLevelMoves(state.moveCount);
+    } else {
+      await _progressRepository.completeLevel(state.moveCount);
+    }
+  }
+
+  void resetLevel() {
+    if (state.level != null) {
+      if (state.isRandomMode) {
+        loadRandomLevel(state.randomDifficulty ?? 'Easy', seed: state.randomSeed);
+      } else {
+        loadLevel(state.level!.levelNumber);
+      }
+    }
+  }
+}

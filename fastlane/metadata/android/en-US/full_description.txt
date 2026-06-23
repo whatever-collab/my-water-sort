@@ -1,0 +1,25 @@
+Water Sort is a simple yet addictive puzzle game where you sort colored water in tubes until each tube contains only one color.
+
+How to play:
+- Tap a tube to pick up the top color, then tap another tube to pour it.
+- You can only pour the same color on top of another same color.
+- Sort all the tubes to win.
+
+Why you'll love it:
+
+🚫 NO ADS, EVER
+No banners. No interstitials. No rewarded videos. Just pure, uninterrupted gameplay.
+
+📊 ZERO TRACKERS
+No analytics. No data collection. No tracking of any kind. Your gameplay is yours alone.
+
+♾️ INFINITE LEVELS
+Procedurally generated puzzles mean there's always a new challenge. No level caps, no energy bars, no waiting.
+
+🔒 COMPLETELY OFFLINE
+No internet permission required. Your data never leaves your device. Play anywhere, anytime.
+
+🎨 CLEAN DESIGN
+Minimalist interface with smooth animations and a calming color palette. Designed to relax, not to distract.
+
+Start sorting today. Your brain will thank you.

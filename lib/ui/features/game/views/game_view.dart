@@ -1,0 +1,412 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:watersort/ui/core/theme/app_colors.dart';
+import 'package:watersort/ui/core/widgets/tangible_button.dart';
+import 'package:watersort/ui/core/widgets/tube_widget.dart';
+import 'package:watersort/ui/features/game/view_models/game_view_model.dart';
+import 'package:watersort/ui/providers.dart';
+
+class GameView extends ConsumerStatefulWidget {
+  const GameView({
+    super.key,
+    required this.levelNumber,
+    this.isRandom = false,
+    this.randomDifficulty = 'Easy',
+  });
+
+  final int levelNumber;
+  final bool isRandom;
+  final String randomDifficulty;
+
+  @override
+  ConsumerState<GameView> createState() => _GameViewState();
+}
+
+class _GameViewState extends ConsumerState<GameView> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (widget.isRandom) {
+        ref.read(gameViewModelProvider.notifier).loadRandomLevel(widget.randomDifficulty);
+      } else {
+        ref.read(gameViewModelProvider.notifier).loadLevel(widget.levelNumber);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(gameViewModelProvider);
+
+    ref.listen<GameViewModelState>(gameViewModelProvider, (prev, next) {
+      if (next.isComplete && !(prev?.isComplete ?? false)) {
+        _showCompleteDialog();
+      }
+    });
+
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top Navigation Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C22), // Off-black
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF222222),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    state.isRandomMode
+                        ? '${state.randomDifficulty?.toUpperCase() ?? "RANDOM"} PUZZLE'
+                        : 'LEVEL ${widget.levelNumber}',
+                    style: const TextStyle(
+                      fontFamily: 'BebasNeue',
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.headingWhite,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => ref.read(gameViewModelProvider.notifier).resetLevel(),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C22), // Off-black
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF222222),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.refresh_rounded,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Game body
+            Expanded(
+              child: state.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(state.error!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => ref
+                                    .read(gameViewModelProvider.notifier)
+                                    .resetLevel(),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _buildGame(state),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGame(GameViewModelState state) {
+    final level = state.level;
+    if (level == null) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF181818), // Dark charcoal background
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF222222), // ultra-faint borders
+              width: 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _stat('MOVES', '${state.moveCount}', Icons.trending_up_rounded),
+              _verticalDivider(),
+              _stat('COLORS', '${level.colorCount}', Icons.palette_rounded),
+              _verticalDivider(),
+              _stat('TUBES', '${level.tubeCount}', Icons.science_rounded),
+            ],
+          ),
+        ),
+
+        // Tubes Container
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final double containerWidth = constraints.maxWidth;
+                final double containerHeight = constraints.maxHeight;
+
+                final int tubeCount = level.tubes.length;
+                final int rows = tubeCount <= 6 ? 1 : 2;
+                final int cols = (tubeCount / rows).ceil();
+
+                const double horizontalSpacing = 10.0;
+                const double verticalSpacing = 16.0;
+
+                // 1. Calculate dimensions based on width limits
+                double tubeWidth = (containerWidth - (cols + 1) * horizontalSpacing) / cols;
+                tubeWidth = tubeWidth.clamp(28.0, 52.0);
+                double tubeHeight = tubeWidth * 3.2;
+
+                // 2. Adjust size downwards if height bounds overflow
+                final double totalNeededHeight = (rows * tubeHeight) + ((rows + 1) * verticalSpacing);
+                if (totalNeededHeight > containerHeight) {
+                  tubeHeight = (containerHeight - (rows + 1) * verticalSpacing) / rows;
+                  // Keep a sensible minimum/maximum height scale
+                  tubeHeight = tubeHeight.clamp(80.0, 166.0);
+                  tubeWidth = tubeHeight / 3.2;
+                }
+
+                // Split indices into 1 or 2 rows
+                final List<List<int>> tubeRows = [];
+                if (rows == 1) {
+                  tubeRows.add(List.generate(tubeCount, (i) => i));
+                } else {
+                  final int firstRowSize = (tubeCount / 2).ceil();
+                  tubeRows.add(List.generate(firstRowSize, (i) => i));
+                  tubeRows.add(List.generate(tubeCount - firstRowSize, (i) => firstRowSize + i));
+                }
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: tubeRows.map((rowIndices) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: verticalSpacing / 2),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: rowIndices.map((i) {
+                          final isSource = state.pouringFromIndex == i;
+                          final isTarget = state.pouringToIndex == i;
+                          final pourToLeft = isSource &&
+                              state.pouringToIndex != null &&
+                              state.pouringToIndex! < i;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: horizontalSpacing / 2),
+                            child: TubeWidget(
+                              tube: level.tubes[i],
+                              isSelected: state.selectedTubeIndex == i,
+                              isPouringSource: isSource,
+                              isPouringTarget: isTarget,
+                              pourToLeft: pourToLeft,
+                              height: tubeHeight,
+                              width: tubeWidth,
+                              onTap: () => ref.read(gameViewModelProvider.notifier).selectTube(i),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+        ),
+
+        // Controls Bottom Action Bar
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: TangibleButton(
+            text: 'Restart',
+            onPressed: () => ref.read(gameViewModelProvider.notifier).resetLevel(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _stat(String label, String value, IconData icon) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: AppColors.accent, // Lime Green (#86EF4D)
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'BebasNeue',
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            color: AppColors.headingWhite,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'BebasNeue',
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppColors.subtext, // Muted Gray (#808080)
+            letterSpacing: 0.8,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _verticalDivider() {
+    return Container(
+      width: 1.0,
+      height: 30,
+      color: AppColors.gridLines, // Faint Charcoal (#222222)
+    );
+  }
+
+  void _showCompleteDialog() {
+    final state = ref.read(gameViewModelProvider);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: const Color(0xFF181818), // Dark charcoal background
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(
+            color: Color(0xFF222222), // ultra-faint borders
+            width: 1.0,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Glowing success trophy
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent.withOpacity(0.3),
+                    width: 1.0,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.emoji_events_rounded,
+                  color: AppColors.accent,
+                  size: 56,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'LEVEL COMPLETE!',
+                style: const TextStyle(
+                  fontFamily: 'BebasNeue',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.headingWhite,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                state.isRandomMode
+                    ? 'You sorted this ${state.randomDifficulty} puzzle in ${state.moveCount} moves.'
+                    : 'You sorted Level ${widget.levelNumber} in ${state.moveCount} moves.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'BebasNeue',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.subtext,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Expanded(
+                    child: TangibleButton(
+                      text: 'Home',
+                      isSecondary: true,
+                      height: 50,
+                      onPressed: () {
+                        Navigator.pop(context); // Pop dialog
+                        Navigator.pop(context); // Pop GameView
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: TangibleButton(
+                      text: state.isRandomMode ? 'Play Again' : 'Next Level',
+                      height: 50,
+                      onPressed: () async {
+                        final notifier = ref.read(gameViewModelProvider.notifier);
+                        await notifier.completeLevel();
+                        if (!mounted) return;
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          if (state.isRandomMode) {
+                            notifier.loadRandomLevel(state.randomDifficulty ?? 'Easy');
+                          } else {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => GameView(levelNumber: widget.levelNumber + 1),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
