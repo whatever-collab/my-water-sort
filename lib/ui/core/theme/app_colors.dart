@@ -36,5 +36,9 @@ class AppColors {
     Color(0xFFFB8C00), // Deep Orange
     Color(0xFF5C6BC0), // Indigo
     Color(0xFF26A69A), // Teal
+    Color(0xFF8D6E63), // Brown
+    Color(0xFFD81B60), // Magenta
+    Color(0xFFFFB300), // Amber
+    Color(0xFF9E9D24), // Olive
   ];
 }

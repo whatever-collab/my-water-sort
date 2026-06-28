@@ -31,8 +31,6 @@ class TubeWidget extends StatefulWidget {
 
 class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  final List<_Bubble> _bubbles = [];
-  final math.Random _random = math.Random();
 
   @override
   void initState() {
@@ -41,16 +39,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
-
-    // Generate random bubbles
-    for (int i = 0; i < 6; i++) {
-      _bubbles.add(_Bubble(
-        xRatio: _random.nextDouble(),
-        yRatio: _random.nextDouble(),
-        size: _random.nextDouble() * 2.5 + 1.5,
-        speed: _random.nextDouble() * 0.35 + 0.25,
-      ));
-    }
   }
 
   @override
@@ -60,20 +48,20 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
   }
 
   IconData _getIconForColor(Color color) {
-    final hex = color.value & 0xFFFFFF;
+    final hex = color.toARGB32() & 0xFFFFFF;
     switch (hex) {
-      case 0xE53935: return Icons.favorite_rounded; // Red (Heart)
-      case 0x1E88E5: return Icons.water_drop_rounded; // Blue (Water droplet)
-      case 0x43A047: return Icons.eco_rounded; // Green (Leaf)
-      case 0xFDD835: return Icons.wb_sunny_rounded; // Yellow (Sun)
-      case 0xFFFF8F00: return Icons.star_rounded; // Orange (Star)
-      case 0x8E24AA: return Icons.dark_mode_rounded; // Purple (Moon)
-      case 0xEC407A: return Icons.auto_awesome_rounded; // Pink (Sparkles)
-      case 0x00ACC1: return Icons.ac_unit_rounded; // Cyan (Snowflake)
-      case 0x7CB342: return Icons.change_history_rounded; // Lime (Triangle)
-      case 0xFB8C00: return Icons.local_fire_department_rounded; // Deep Orange (Fire)
-      case 0x5C6BC0: return Icons.cloud_rounded; // Indigo (Cloud)
-      case 0x26A69A: return Icons.diamond_rounded; // Teal (Diamond)
+      case 0xE53935: return Icons.favorite_rounded;
+      case 0x1E88E5: return Icons.water_drop_rounded;
+      case 0x43A047: return Icons.eco_rounded;
+      case 0xFDD835: return Icons.wb_sunny_rounded;
+      case 0xFFFF8F00: return Icons.star_rounded;
+      case 0x8E24AA: return Icons.dark_mode_rounded;
+      case 0xEC407A: return Icons.auto_awesome_rounded;
+      case 0x00ACC1: return Icons.ac_unit_rounded;
+      case 0x7CB342: return Icons.change_history_rounded;
+      case 0xFB8C00: return Icons.local_fire_department_rounded;
+      case 0x5C6BC0: return Icons.cloud_rounded;
+      case 0x26A69A: return Icons.diamond_rounded;
       default: return Icons.brightness_1_rounded;
     }
   }
@@ -87,7 +75,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        // Selection hover lift
         double yOffset = 0;
         double pulseScale = 1.0;
         if (widget.isSelected) {
@@ -182,7 +169,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
                                   ),
                                   child: CustomPaint(
                                     painter: _BubblePainter(
-                                      bubbles: _bubbles,
                                       animationValue: _controller.value,
                                       isFast: widget.isSelected,
                                     ),
@@ -277,27 +263,11 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
   }
 }
 
-class _Bubble {
-  final double xRatio;
-  final double yRatio;
-  final double size;
-  final double speed;
-
-  _Bubble({
-    required this.xRatio,
-    required this.yRatio,
-    required this.size,
-    required this.speed,
-  });
-}
-
 class _BubblePainter extends CustomPainter {
-  final List<_Bubble> bubbles;
   final double animationValue;
   final bool isFast;
 
   _BubblePainter({
-    required this.bubbles,
     required this.animationValue,
     required this.isFast,
   });
@@ -309,11 +279,17 @@ class _BubblePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final double speedMultiplier = isFast ? 1.8 : 1.0;
+    final random = math.Random(42);
 
-    for (final bubble in bubbles) {
-      final x = bubble.xRatio * size.width;
-      double y = size.height - ((bubble.yRatio + animationValue * bubble.speed * speedMultiplier) % 1.0) * size.height;
-      canvas.drawCircle(Offset(x, y), bubble.size, paint);
+    for (int i = 0; i < 6; i++) {
+      final xRatio = random.nextDouble();
+      final yRatio = random.nextDouble();
+      final bubbleSize = random.nextDouble() * 2.5 + 1.5;
+      final speed = random.nextDouble() * 0.35 + 0.25;
+
+      final x = xRatio * size.width;
+      double y = size.height - ((yRatio + animationValue * speed * speedMultiplier) % 1.0) * size.height;
+      canvas.drawCircle(Offset(x, y), bubbleSize, paint);
     }
   }
 

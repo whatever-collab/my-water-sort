@@ -8,7 +8,7 @@ import 'package:watersort/ui/core/theme/app_colors.dart';
 
 class LevelGenerator {
   static const int _baseColors = 3;
-  static const int _maxColors = 12;
+  static const int _maxColors = 16;
 
   GameLevel generate(int levelNumber) {
     final random = Random(levelNumber);
@@ -34,7 +34,7 @@ class LevelGenerator {
 
   GameLevel generateRandom({required int colorCount, required int seed}) {
     final random = Random(seed);
-    final tubeCount = colorCount + 2;
+    final tubeCount = colorCount + _getVacantCount(colorCount);
     const capacity = 4;
 
     final colors = _pickColors(colorCount, random);
@@ -58,9 +58,17 @@ class LevelGenerator {
     return count.clamp(_baseColors, _maxColors);
   }
 
+  int _getVacantCount(int colorCount) {
+    if (colorCount <= 4) return 2;
+    if (colorCount <= 8) return 3;
+    if (colorCount <= 12) return 4;
+    if (colorCount <= 14) return 5;
+    return 6;
+  }
+
   int _getTubeCount(int level) {
     final colorCount = _getColorCount(level);
-    return colorCount + 2;
+    return colorCount + _getVacantCount(colorCount);
   }
 
   List<Color> _pickColors(int count, Random random) {
@@ -90,7 +98,7 @@ class LevelGenerator {
     );
 
     int segmentIndex = 0;
-    for (int i = 0; i < tubeCount - 2; i++) {
+    for (int i = 0; i < colorCount; i++) {
       for (int j = 0; j < capacity; j++) {
         if (segmentIndex < colorSegments.length) {
           tubeColors[i].add(colorSegments[segmentIndex]);

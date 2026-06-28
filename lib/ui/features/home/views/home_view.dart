@@ -312,6 +312,24 @@ class _HomeViewState extends ConsumerState<HomeView> {
                   );
                 },
               ),
+              const SizedBox(height: 12),
+              TangibleButton(
+                text: 'Super Duper Hard (16 Colors)',
+                isSecondary: true,
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GameView(
+                        levelNumber: 0,
+                        isRandom: true,
+                        randomDifficulty: 'Super Duper Hard',
+                      ),
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 20),
               TextButton(
                 onPressed: () => Navigator.pop(context),

@@ -62,7 +62,7 @@ class _GameViewState extends ConsumerState<GameView> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1C1C22), // Off-black
+                        color: const Color(0xFF1C1C22),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: const Color(0xFF222222),
@@ -93,7 +93,7 @@ class _GameViewState extends ConsumerState<GameView> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1C1C22), // Off-black
+                        color: const Color(0xFF1C1C22),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: const Color(0xFF222222),
@@ -149,10 +149,10 @@ class _GameViewState extends ConsumerState<GameView> {
           margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF181818), // Dark charcoal background
+            color: const Color(0xFF181818),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFF222222), // ultra-faint borders
+              color: const Color(0xFF222222),
               width: 1.0,
             ),
           ),
@@ -178,41 +178,45 @@ class _GameViewState extends ConsumerState<GameView> {
                 final double containerHeight = constraints.maxHeight;
 
                 final int tubeCount = level.tubes.length;
-                final int rows = tubeCount <= 6 ? 1 : 2;
+                final int maxPerRow;
+                if (tubeCount <= 6) {
+                  maxPerRow = tubeCount;
+                } else if (tubeCount <= 8) {
+                  maxPerRow = 4;
+                } else if (tubeCount <= 12) {
+                  maxPerRow = 5;
+                } else {
+                  maxPerRow = 6;
+                }
+                final int rows = (tubeCount / maxPerRow).ceil();
                 final int cols = (tubeCount / rows).ceil();
 
-                const double horizontalSpacing = 10.0;
-                const double verticalSpacing = 16.0;
+                const double spacing = 8.0;
+                const double aspectRatio = 3.2;
 
-                // 1. Calculate dimensions based on width limits
-                double tubeWidth = (containerWidth - (cols + 1) * horizontalSpacing) / cols;
-                tubeWidth = tubeWidth.clamp(28.0, 52.0);
-                double tubeHeight = tubeWidth * 3.2;
+                final double maxTubeWidth = (containerWidth - (cols + 1) * spacing) / cols;
+                final double maxTubeHeight = (containerHeight - rows * spacing) / rows;
 
-                // 2. Adjust size downwards if height bounds overflow
-                final double totalNeededHeight = (rows * tubeHeight) + ((rows + 1) * verticalSpacing);
-                if (totalNeededHeight > containerHeight) {
-                  tubeHeight = (containerHeight - (rows + 1) * verticalSpacing) / rows;
-                  // Keep a sensible minimum/maximum height scale
-                  tubeHeight = tubeHeight.clamp(80.0, 166.0);
-                  tubeWidth = tubeHeight / 3.2;
+                double tubeWidth = maxTubeWidth.clamp(0.0, 52.0);
+                double tubeHeight = tubeWidth * aspectRatio;
+
+                if (tubeHeight > maxTubeHeight) {
+                  tubeHeight = maxTubeHeight.clamp(0.0, 166.0);
+                  tubeWidth = tubeHeight / aspectRatio;
                 }
 
-                // Split indices into 1 or 2 rows
                 final List<List<int>> tubeRows = [];
-                if (rows == 1) {
-                  tubeRows.add(List.generate(tubeCount, (i) => i));
-                } else {
-                  final int firstRowSize = (tubeCount / 2).ceil();
-                  tubeRows.add(List.generate(firstRowSize, (i) => i));
-                  tubeRows.add(List.generate(tubeCount - firstRowSize, (i) => firstRowSize + i));
+                for (int r = 0; r < rows; r++) {
+                  final start = r * maxPerRow;
+                  final end = (start + maxPerRow).clamp(0, tubeCount);
+                  tubeRows.add(List.generate(end - start, (i) => start + i));
                 }
 
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: tubeRows.map((rowIndices) {
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: verticalSpacing / 2),
+                      padding: const EdgeInsets.symmetric(vertical: spacing / 2),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: rowIndices.map((i) {
@@ -222,7 +226,7 @@ class _GameViewState extends ConsumerState<GameView> {
                               state.pouringToIndex != null &&
                               state.pouringToIndex! < i;
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: horizontalSpacing / 2),
+                            padding: const EdgeInsets.symmetric(horizontal: spacing / 2),
                             child: TubeWidget(
                               tube: level.tubes[i],
                               isSelected: state.selectedTubeIndex == i,
@@ -243,15 +247,6 @@ class _GameViewState extends ConsumerState<GameView> {
             ),
           ),
         ),
-
-        // Controls Bottom Action Bar
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: TangibleButton(
-            text: 'Restart',
-            onPressed: () => ref.read(gameViewModelProvider.notifier).resetLevel(),
-          ),
-        ),
       ],
     );
   }
@@ -263,7 +258,7 @@ class _GameViewState extends ConsumerState<GameView> {
         Icon(
           icon,
           size: 18,
-          color: AppColors.accent, // Lime Green (#86EF4D)
+          color: AppColors.accent,
         ),
         const SizedBox(height: 6),
         Text(
@@ -283,7 +278,7 @@ class _GameViewState extends ConsumerState<GameView> {
             fontFamily: 'BebasNeue',
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: AppColors.subtext, // Muted Gray (#808080)
+            color: AppColors.subtext,
             letterSpacing: 0.8,
           ),
         ),
@@ -295,7 +290,7 @@ class _GameViewState extends ConsumerState<GameView> {
     return Container(
       width: 1.0,
       height: 30,
-      color: AppColors.gridLines, // Faint Charcoal (#222222)
+      color: AppColors.gridLines,
     );
   }
 
@@ -305,12 +300,12 @@ class _GameViewState extends ConsumerState<GameView> {
       context: context,
       barrierDismissible: false,
       builder: (_) => Dialog(
-        backgroundColor: const Color(0xFF181818), // Dark charcoal background
+        backgroundColor: const Color(0xFF181818),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: const BorderSide(
-            color: Color(0xFF222222), // ultra-faint borders
+            color: Color(0xFF222222),
             width: 1.0,
           ),
         ),
@@ -319,7 +314,6 @@ class _GameViewState extends ConsumerState<GameView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Glowing success trophy
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -370,8 +364,8 @@ class _GameViewState extends ConsumerState<GameView> {
                       isSecondary: true,
                       height: 50,
                       onPressed: () {
-                        Navigator.pop(context); // Pop dialog
-                        Navigator.pop(context); // Pop GameView
+                        Navigator.pop(context);
+                        Navigator.pop(context);
                       },
                     ),
                   ),

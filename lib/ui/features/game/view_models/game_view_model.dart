@@ -104,6 +104,8 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
         colorCount = 9;
       } else if (difficulty == 'Super Hard') {
         colorCount = 12;
+      } else if (difficulty == 'Super Duper Hard') {
+        colorCount = 16;
       }
 
       final level = _levelGenerator.generateRandom(
@@ -196,6 +198,15 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
       return;
     }
 
+    // Set pouring indices for animation
+    state = state.copyWith(
+      pouringFromIndex: () => fromIndex,
+      pouringToIndex: () => toIndex,
+    );
+
+    // Brief delay for animation
+    await Future.delayed(const Duration(milliseconds: 50));
+
     final newFromColors = List<Color>.from(fromTube.colors)
       ..removeRange(fromTube.colors.length - pourCount, fromTube.colors.length);
     final newToColors = List<Color>.from(toTube.colors)
@@ -216,6 +227,8 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
       level: newLevel,
       moveCount: state.moveCount + 1,
       selectedTubeIndex: () => null,
+      pouringFromIndex: () => null,
+      pouringToIndex: () => null,
       isComplete: isComplete,
     );
   }
