@@ -58,10 +58,14 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       case 0x8E24AA: return Icons.dark_mode_rounded;
       case 0xEC407A: return Icons.auto_awesome_rounded;
       case 0x00ACC1: return Icons.ac_unit_rounded;
-      case 0x7CB342: return Icons.change_history_rounded;
-      case 0xFB8C00: return Icons.local_fire_department_rounded;
+      case 0xB39DDB: return Icons.palette_rounded;
+      case 0xFF7043: return Icons.whatshot_rounded;
       case 0x5C6BC0: return Icons.cloud_rounded;
-      case 0x26A69A: return Icons.diamond_rounded;
+      case 0x009688: return Icons.diamond_rounded;
+      case 0x8D6E63: return Icons.cookie_rounded;
+      case 0xB71C1C: return Icons.bolt_rounded;
+      case 0xAD1457: return Icons.nightlight_rounded;
+      case 0x9E9D24: return Icons.grass_rounded;
       default: return Icons.brightness_1_rounded;
     }
   }

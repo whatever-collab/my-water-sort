@@ -22,7 +22,7 @@ class AppColors {
   static const Color lightCard = Color(0xFF1C1C22);
   static const Color lightBorder = Color(0xFF86EF4D);
 
-  // Tube water colors - solid, vibrant, saturated
+  // Tube water colors - solid, vibrant, easily distinguishable
   static const List<Color> waterColors = [
     Color(0xFFE53935), // Red
     Color(0xFF1E88E5), // Blue
@@ -32,13 +32,13 @@ class AppColors {
     Color(0xFF8E24AA), // Purple
     Color(0xFFEC407A), // Pink
     Color(0xFF00ACC1), // Cyan
-    Color(0xFF7CB342), // Lime
-    Color(0xFFFB8C00), // Deep Orange
+    Color(0xFFB39DDB), // Lavender
+    Color(0xFFFF7043), // Coral
     Color(0xFF5C6BC0), // Indigo
-    Color(0xFF26A69A), // Teal
+    Color(0xFF009688), // Teal
     Color(0xFF8D6E63), // Brown
-    Color(0xFFD81B60), // Magenta
-    Color(0xFFFFB300), // Amber
+    Color(0xFFB71C1C), // Crimson
+    Color(0xFFAD1457), // Maroon
     Color(0xFF9E9D24), // Olive
   ];
 }
