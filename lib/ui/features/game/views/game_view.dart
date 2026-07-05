@@ -88,35 +88,59 @@ class _GameViewState extends ConsumerState<GameView> {
                       ),
                     ),
                   ),
-                  Text(
-                    state.isRandomMode
-                        ? '${state.randomDifficulty?.toUpperCase() ?? "RANDOM"} PUZZLE'
-                        : 'LEVEL ${widget.levelNumber}',
-                    style: const TextStyle(
-                      fontFamily: 'BebasNeue',
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.headingWhite,
-                      letterSpacing: 1.0,
+                  if (!state.isRandomMode)
+                    Text(
+                      'LEVEL ${widget.levelNumber}',
+                      style: const TextStyle(
+                        fontFamily: 'BebasNeue',
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.headingWhite,
+                        letterSpacing: 1.0,
+                      ),
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: () => ref.read(gameViewModelProvider.notifier).resetLevel(),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1C1C22),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF222222),
-                          width: 1.0,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1C1C22),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: const Color(0xFF222222),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: state.canUndo
+                              ? () => ref.read(gameViewModelProvider.notifier).undoMove()
+                              : null,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            child: Icon(
+                              Icons.undo_rounded,
+                              size: 20,
+                              color: Colors.white.withValues(alpha: state.canUndo ? 1.0 : 0.3),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: const Icon(
-                        Icons.refresh_rounded,
-                        size: 20,
-                        color: Colors.white,
-                      ),
+                        Container(
+                          width: 1,
+                          height: 20,
+                          color: const Color(0xFF222222),
+                        ),
+                        GestureDetector(
+                          onTap: () => ref.read(gameViewModelProvider.notifier).resetLevel(),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            child: Icon(
+                              Icons.refresh_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

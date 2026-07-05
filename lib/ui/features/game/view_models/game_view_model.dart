@@ -8,6 +8,13 @@ import 'package:watersort/domain/models/tube.dart';
 import 'package:watersort/domain/use_cases/level_generator.dart';
 
 @immutable
+class MoveSnapshot {
+  const MoveSnapshot({required this.tubes, required this.moveCount});
+  final List<Tube> tubes;
+  final int moveCount;
+}
+
+@immutable
 class GameViewModelState {
   const GameViewModelState({
     this.level,
@@ -21,6 +28,7 @@ class GameViewModelState {
     this.isRandomMode = false,
     this.randomDifficulty,
     this.randomSeed,
+    this.moveHistory = const [],
   });
 
   final GameLevel? level;
@@ -34,6 +42,9 @@ class GameViewModelState {
   final bool isRandomMode;
   final String? randomDifficulty;
   final int? randomSeed;
+  final List<MoveSnapshot> moveHistory;
+
+  bool get canUndo => moveHistory.isNotEmpty && !isComplete;
 
   GameViewModelState copyWith({
     GameLevel? level,
@@ -47,6 +58,7 @@ class GameViewModelState {
     bool? isRandomMode,
     String? randomDifficulty,
     int? randomSeed,
+    List<MoveSnapshot>? moveHistory,
   }) {
     return GameViewModelState(
       level: level ?? this.level,
@@ -63,6 +75,7 @@ class GameViewModelState {
       isRandomMode: isRandomMode ?? this.isRandomMode,
       randomDifficulty: randomDifficulty ?? this.randomDifficulty,
       randomSeed: randomSeed ?? this.randomSeed,
+      moveHistory: moveHistory ?? this.moveHistory,
     );
   }
 }
@@ -198,6 +211,12 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
       return;
     }
 
+    // Save snapshot before pouring
+    final snapshot = MoveSnapshot(
+      tubes: state.level!.tubes.map((t) => Tube(colors: List<Color>.from(t.colors), capacity: t.capacity)).toList(),
+      moveCount: state.moveCount,
+    );
+
     // Set pouring indices for animation
     state = state.copyWith(
       pouringFromIndex: () => fromIndex,
@@ -230,6 +249,7 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
       pouringFromIndex: () => null,
       pouringToIndex: () => null,
       isComplete: isComplete,
+      moveHistory: [...state.moveHistory, snapshot],
     );
   }
 
@@ -250,5 +270,22 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
         loadLevel(state.level!.levelNumber);
       }
     }
+  }
+
+  void undoMove() {
+    if (!state.canUndo || state.level == null) return;
+
+    HapticFeedback.lightImpact();
+
+    final snapshot = state.moveHistory.last;
+    final newHistory = List<MoveSnapshot>.from(state.moveHistory)..removeLast();
+
+    state = state.copyWith(
+      level: state.level!.copyWith(tubes: snapshot.tubes),
+      moveCount: snapshot.moveCount,
+      selectedTubeIndex: () => null,
+      isComplete: false,
+      moveHistory: newHistory,
+    );
   }
 }
