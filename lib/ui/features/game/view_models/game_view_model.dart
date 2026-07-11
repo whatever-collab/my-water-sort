@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +31,8 @@ class GameViewModelState {
     this.randomDifficulty,
     this.randomSeed,
     this.moveHistory = const [],
+    this.timeLeft,
+    this.isTimeOut = false,
   });
 
   final GameLevel? level;
@@ -43,8 +47,10 @@ class GameViewModelState {
   final String? randomDifficulty;
   final int? randomSeed;
   final List<MoveSnapshot> moveHistory;
+  final int? timeLeft;
+  final bool isTimeOut;
 
-  bool get canUndo => moveHistory.isNotEmpty && !isComplete;
+  bool get canUndo => moveHistory.isNotEmpty && !isComplete && !isTimeOut;
 
   GameViewModelState copyWith({
     GameLevel? level,
@@ -59,6 +65,8 @@ class GameViewModelState {
     String? randomDifficulty,
     int? randomSeed,
     List<MoveSnapshot>? moveHistory,
+    int? Function()? timeLeft,
+    bool? isTimeOut,
   }) {
     return GameViewModelState(
       level: level ?? this.level,
@@ -76,6 +84,8 @@ class GameViewModelState {
       randomDifficulty: randomDifficulty ?? this.randomDifficulty,
       randomSeed: randomSeed ?? this.randomSeed,
       moveHistory: moveHistory ?? this.moveHistory,
+      timeLeft: timeLeft != null ? timeLeft() : this.timeLeft,
+      isTimeOut: isTimeOut ?? this.isTimeOut,
     );
   }
 }
@@ -89,18 +99,60 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
   final ProgressRepository _progressRepository;
   final LevelGenerator _levelGenerator;
 
+  Timer? _timer;
+
+  bool _shouldHaveTimer({required bool isRandom, required int levelNumber, required String difficulty}) {
+    if (isRandom) {
+      return difficulty != 'Easy';
+    } else {
+      return levelNumber >= 4;
+    }
+  }
+
+  int _calculateTimerDuration(int colorCount) {
+    return ((30 + (colorCount * 15)) * 1.5).round();
+  }
+
+  void _startTimer(int seconds) {
+    _timer?.cancel();
+    state = state.copyWith(timeLeft: () => seconds, isTimeOut: false);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (state.timeLeft == null || state.timeLeft! <= 0) {
+        timer.cancel();
+        return;
+      }
+      final newTime = state.timeLeft! - 1;
+      if (newTime == 0) {
+        timer.cancel();
+        state = state.copyWith(
+          timeLeft: () => 0,
+          isTimeOut: true,
+        );
+        HapticFeedback.heavyImpact();
+      } else {
+        state = state.copyWith(timeLeft: () => newTime);
+      }
+    });
+  }
+
   Future<void> loadLevel(int levelNumber) async {
+    _timer?.cancel();
     state = const GameViewModelState(isLoading: true);
 
     try {
       final level = _levelGenerator.generate(levelNumber);
       state = GameViewModelState(level: level);
+
+      if (_shouldHaveTimer(isRandom: false, levelNumber: levelNumber, difficulty: '')) {
+        _startTimer(_calculateTimerDuration(level.colorCount));
+      }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Failed to load level: $e');
     }
   }
 
   Future<void> loadRandomLevel(String difficulty, {int? seed}) async {
+    _timer?.cancel();
     final int levelSeed = seed ?? DateTime.now().millisecondsSinceEpoch;
     state = GameViewModelState(
       isLoading: true,
@@ -130,6 +182,10 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
         level: level,
         isLoading: false,
       );
+
+      if (_shouldHaveTimer(isRandom: true, levelNumber: -1, difficulty: difficulty)) {
+        _startTimer(_calculateTimerDuration(level.colorCount));
+      }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -154,7 +210,7 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
   }
 
   void selectTube(int index) {
-    if (state.isComplete || state.level == null || state.pouringFromIndex != null) return;
+    if (state.isComplete || state.isTimeOut || state.level == null || state.pouringFromIndex != null) return;
 
     if (state.selectedTubeIndex == null) {
       if (!state.level!.tubes[index].isEmpty) {
@@ -239,6 +295,7 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
     final isComplete = newLevel.isComplete;
 
     if (isComplete) {
+      _timer?.cancel();
       HapticFeedback.heavyImpact();
     }
 
@@ -287,5 +344,11 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
       isComplete: false,
       moveHistory: newHistory,
     );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 }

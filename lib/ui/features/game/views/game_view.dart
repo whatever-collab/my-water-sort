@@ -44,6 +44,9 @@ class _GameViewState extends ConsumerState<GameView> {
       if (next.isComplete && !(prev?.isComplete ?? false)) {
         _showCompleteDialog();
       }
+      if (next.isTimeOut && !(prev?.isTimeOut ?? false)) {
+        _showTimeOutDialog();
+      }
     });
 
     final isComplete = state.isComplete;
@@ -198,6 +201,15 @@ class _GameViewState extends ConsumerState<GameView> {
             children: [
               _stat('MOVES', '${state.moveCount}', Icons.trending_up_rounded),
               _verticalDivider(),
+              if (state.timeLeft != null) ...[
+                _stat(
+                  'TIME LEFT',
+                  _formatTime(state.timeLeft!),
+                  Icons.timer_rounded,
+                  color: state.timeLeft! <= 15 ? Colors.red : AppColors.accent,
+                ),
+                _verticalDivider(),
+              ],
               _stat('COLORS', '${level.colorCount}', Icons.palette_rounded),
               _verticalDivider(),
               _stat('TUBES', '${level.tubeCount}', Icons.science_rounded),
@@ -216,14 +228,12 @@ class _GameViewState extends ConsumerState<GameView> {
 
                 final int tubeCount = level.tubes.length;
                 final int maxPerRow;
-                if (tubeCount <= 6) {
+                if (tubeCount <= 5) {
                   maxPerRow = tubeCount;
                 } else if (tubeCount <= 8) {
                   maxPerRow = 4;
-                } else if (tubeCount <= 12) {
-                  maxPerRow = 5;
                 } else {
-                  maxPerRow = 6;
+                  maxPerRow = 5;
                 }
                 final int rows = (tubeCount / maxPerRow).ceil();
                 final int cols = (tubeCount / rows).ceil();
@@ -288,23 +298,24 @@ class _GameViewState extends ConsumerState<GameView> {
     );
   }
 
-  Widget _stat(String label, String value, IconData icon) {
+  Widget _stat(String label, String value, IconData icon, {Color? color}) {
+    final displayColor = color ?? AppColors.accent;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
           size: 18,
-          color: AppColors.accent,
+          color: displayColor,
         ),
         const SizedBox(height: 6),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'BebasNeue',
             fontSize: 24,
             fontWeight: FontWeight.w900,
-            color: AppColors.headingWhite,
+            color: color ?? AppColors.headingWhite,
             letterSpacing: 0.5,
           ),
         ),
@@ -517,6 +528,105 @@ class _GameViewState extends ConsumerState<GameView> {
                             );
                           }
                         }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _showTimeOutDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: const Color(0xFF181818),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(
+            color: Color(0xFF222222),
+            width: 1.0,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    width: 1.0,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.timer_off_rounded,
+                  color: Colors.red,
+                  size: 56,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "TIME'S UP!",
+                style: TextStyle(
+                  fontFamily: 'BebasNeue',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.headingWhite,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "You ran out of time to sort the water colors.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'BebasNeue',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.subtext,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Expanded(
+                    child: TangibleButton(
+                      text: 'Home',
+                      isSecondary: true,
+                      height: 50,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: TangibleButton(
+                      text: 'Try Again',
+                      height: 50,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ref.read(gameViewModelProvider.notifier).resetLevel();
                       },
                     ),
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:watersort/ui/core/theme/app_colors.dart';
 import 'package:watersort/ui/core/widgets/tangible_button.dart';
@@ -22,6 +23,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
     Future.microtask(() => ref.read(homeViewModelProvider.notifier).loadProgress());
   }
 
+  Future<void> _launchUrl(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      debugPrint('Could not launch $url');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(homeViewModelProvider);
@@ -34,6 +42,49 @@ class _HomeViewState extends ConsumerState<HomeView> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => _launchUrl('https://github.com/sidhant947/water-sort'),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C22),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF222222),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.star_rounded,
+                        size: 20,
+                        color: Colors.amber,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => _launchUrl('https://buymeacoffee.com/sidhant947'),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C22),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF222222),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.favorite_rounded,
+                        size: 20,
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const Spacer(flex: 3),
 
               // Tactile Glass Droplet Logo

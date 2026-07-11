@@ -54,16 +54,15 @@ class LevelGenerator {
   }
 
   int _getColorCount(int level) {
-    final count = _baseColors + (level - 1) ~/ 5;
+    final count = _baseColors + (level - 1) ~/ 3;
     return count.clamp(_baseColors, _maxColors);
   }
 
   int _getVacantCount(int colorCount) {
-    if (colorCount <= 4) return 2;
-    if (colorCount <= 8) return 3;
-    if (colorCount <= 12) return 4;
-    if (colorCount <= 14) return 5;
-    return 6;
+    if (colorCount <= 4) return 1;
+    if (colorCount <= 8) return 2;
+    if (colorCount <= 12) return 2;
+    return 3;
   }
 
   int _getTubeCount(int level) {
