@@ -83,31 +83,111 @@ class LevelGenerator {
     required List<Color> colors,
     required Random random,
   }) {
-    final colorSegments = <Color>[];
-    for (final color in colors) {
-      for (int i = 0; i < capacity; i++) {
-        colorSegments.add(color);
-      }
-    }
-    colorSegments.shuffle(random);
-
-    final tubeColors = List.generate(
-      tubeCount,
-      (index) => <Color>[],
-    );
-
-    int segmentIndex = 0;
-    for (int i = 0; i < colorCount; i++) {
-      for (int j = 0; j < capacity; j++) {
-        if (segmentIndex < colorSegments.length) {
-          tubeColors[i].add(colorSegments[segmentIndex]);
-          segmentIndex++;
+    while (true) {
+      final colorSegments = <Color>[];
+      for (final color in colors) {
+        for (int i = 0; i < capacity; i++) {
+          colorSegments.add(color);
         }
       }
+      colorSegments.shuffle(random);
+
+      final tubeColors = List.generate(
+        tubeCount,
+        (index) => <Color>[],
+      );
+
+      int segmentIndex = 0;
+      for (int i = 0; i < colorCount; i++) {
+        for (int j = 0; j < capacity; j++) {
+          if (segmentIndex < colorSegments.length) {
+            tubeColors[i].add(colorSegments[segmentIndex]);
+            segmentIndex++;
+          }
+        }
+      }
+
+      final candidateTubes = tubeColors
+          .map((cList) => Tube(colors: cList, capacity: capacity))
+          .toList();
+
+      if (_isSolvable(candidateTubes)) {
+        return candidateTubes;
+      }
+    }
+  }
+
+  bool _isSolvable(List<Tube> initialTubes) {
+    final visited = <String>{};
+
+    String getStateKey(List<Tube> tubes) {
+      return tubes.map((t) => t.colors.map((c) => c.hashCode).join(',')).join(';');
     }
 
-    return tubeColors
-        .map((colors) => Tube(colors: colors, capacity: capacity))
-        .toList();
+    bool dfs(List<Tube> currentTubes) {
+      if (visited.length > 5000) return false; // Safety limit
+
+      final key = getStateKey(currentTubes);
+      if (visited.contains(key)) return false;
+      visited.add(key);
+
+      bool isComplete = true;
+      for (final tube in currentTubes) {
+        if (!tube.isEmpty && !tube.isSolved) {
+          isComplete = false;
+          break;
+        }
+      }
+      if (isComplete) return true;
+
+      for (int fromIdx = 0; fromIdx < currentTubes.length; fromIdx++) {
+        final fromTube = currentTubes[fromIdx];
+        if (fromTube.isEmpty) continue;
+
+        final colorToMove = fromTube.topColor!;
+        int countToMove = 0;
+        for (int i = fromTube.colors.length - 1; i >= 0; i--) {
+          if (fromTube.colors[i] == colorToMove) {
+            countToMove++;
+          } else {
+            break;
+          }
+        }
+
+        for (int toIdx = 0; toIdx < currentTubes.length; toIdx++) {
+          if (fromIdx == toIdx) continue;
+          final toTube = currentTubes[toIdx];
+
+          if (toTube.isFull) continue;
+          if (!toTube.isEmpty && toTube.topColor != colorToMove) continue;
+
+          final availableSpace = toTube.capacity - toTube.colors.length;
+          final pourCount = min(countToMove, availableSpace);
+          if (pourCount == 0) continue;
+
+          // Prune: Pouring a single-color stack into an empty tube is a useless move
+          final fromHasOnlyOneColor = fromTube.colors.every((c) => c == colorToMove);
+          if (toTube.isEmpty && fromHasOnlyOneColor) {
+            continue;
+          }
+
+          final newFromColors = List<Color>.from(fromTube.colors)
+            ..removeRange(fromTube.colors.length - pourCount, fromTube.colors.length);
+          final newToColors = List<Color>.from(toTube.colors)
+            ..addAll(List.filled(pourCount, colorToMove));
+
+          final nextTubes = List<Tube>.from(currentTubes);
+          nextTubes[fromIdx] = fromTube.copyWith(colors: newFromColors);
+          nextTubes[toIdx] = toTube.copyWith(colors: newToColors);
+
+          if (dfs(nextTubes)) return true;
+        }
+      }
+
+      return false;
+    }
+
+    return dfs(initialTubes);
   }
 }
+

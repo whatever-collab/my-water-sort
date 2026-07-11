@@ -200,19 +200,15 @@ class _GameViewState extends ConsumerState<GameView> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _stat('MOVES', '${state.moveCount}', Icons.trending_up_rounded),
-              _verticalDivider(),
               if (state.timeLeft != null) ...[
+                _verticalDivider(),
                 _stat(
                   'TIME LEFT',
                   _formatTime(state.timeLeft!),
                   Icons.timer_rounded,
                   color: state.timeLeft! <= 15 ? Colors.red : AppColors.accent,
                 ),
-                _verticalDivider(),
               ],
-              _stat('COLORS', '${level.colorCount}', Icons.palette_rounded),
-              _verticalDivider(),
-              _stat('TUBES', '${level.tubeCount}', Icons.science_rounded),
             ],
           ),
         ),
