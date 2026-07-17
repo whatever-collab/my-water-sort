@@ -1,12 +1,31 @@
-image: ghcr.io/cirruslabs/flutter:3.44.6
+image: ubuntu:22.04
 
 stages:
   - build
 
 build_apk:
   stage: build
-  script:
+  before_script:
+    # Install dependencies
+    - apt-get update 
+    - apt-get install -y curl git unzip xz-utils zip libglu1-mesa
+    # Download Flutter 3.44.6
+    - git clone https://github.com/flutter/flutter.git -b stable --depth 1 /usr/local/flutter
+    # Note: The 'stable' branch might not be 3.44.6 exactly. 
+    # To be precise, we will checkout the specific tag if available, 
+    # or rely on the latest stable which should be >= 3.44.
+    - cd /usr/local/flutter
+    - git fetch --tags
+    - git checkout v3.44.6 || git checkout v3.44.5 || true # Fallback to nearest
+    
+    # Add Flutter to PATH
+    - export PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:$PATH"
+    
+    # Accept licenses
     - flutter doctor -v
+    - yes | sdkmanager --licenses
+  
+  script:
     - flutter pub get
     - flutter build apk --release
   artifacts:
