@@ -6,26 +6,40 @@ stages:
 build_apk:
   stage: build
   before_script:
-    # Install dependencies
+    # 1. Install basic dependencies
     - apt-get update 
-    - apt-get install -y curl git unzip xz-utils zip libglu1-mesa
-    # Download Flutter 3.44.6
-    - git clone https://github.com/flutter/flutter.git -b stable --depth 1 /usr/local/flutter
-    # Note: The 'stable' branch might not be 3.44.6 exactly. 
-    # To be precise, we will checkout the specific tag if available, 
-    # or rely on the latest stable which should be >= 3.44.
-    - cd /usr/local/flutter
-    - git fetch --tags
-    - git checkout v3.44.6 || git checkout v3.44.5 || true # Fallback to nearest
+    - apt-get install -y curl git unzip xz-utils zip libglu1-mesa openjdk-17-jdk-headless
     
-    # Add Flutter to PATH
+    # 2. Set up Java (required for Flutter/Android)
+    - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    
+    # 3. Download and set up Flutter
+    - git clone https://github.com/flutter/flutter.git -b stable --depth 1 /usr/local/flutter
+    - cd /usr/local/flutter
     - export PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:$PATH"
     
-    # Accept licenses
-    - flutter doctor -v
+    # 4. Precache Flutter artifacts for Android
+    - flutter precache --android
+    
+    # 5. Set up Android SDK Home
+    - export ANDROID_HOME=$HOME/android-sdk
+    - mkdir -p $ANDROID_HOME/cmdline-tools/latest/bin
+    
+    # 6. Download Android Command Line Tools
+    - curl -o cmdlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+    - unzip -q cmdlinetools.zip -d $ANDROID_HOME/cmdline-tools/temp
+    - mv $ANDROID_HOME/cmdline-tools/temp/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/
+    - rm -rf $ANDROID_HOME/cmdline-tools/temp cmdlinetools.zip
+    
+    # 7. Add sdkmanager to PATH
+    - export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+    
+    # 8. Accept Licenses and Install Required SDK Packages
     - yes | sdkmanager --licenses
+    - sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
   
   script:
+    - cd $CI_PROJECT_DIR
     - flutter pub get
     - flutter build apk --release
   artifacts:
