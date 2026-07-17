@@ -42,10 +42,19 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
-            storePassword = keystoreProperties["storePassword"] as String
+            // Use debug keystore if key.properties is missing (for CI builds)
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String?
+                keyPassword = keystoreProperties["keyPassword"] as String?
+                storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+                storePassword = keystoreProperties["storePassword"] as String?
+            } else {
+                // Fallback to debug keystore for unsigned/CI builds
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+                storeFile = file("${rootProject.projectDir}/debug.keystore")
+                storePassword = "android"
+            }
         }
     }
 
