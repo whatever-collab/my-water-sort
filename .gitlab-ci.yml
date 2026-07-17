@@ -6,6 +6,9 @@ stages:
 build_apk:
   stage: build
   before_script:
+    # Ignore pipefail for sdkmanager license issues
+    - set +o pipefail
+    
     # 1. Install basic dependencies
     - apt-get update 
     - apt-get install -y curl git unzip xz-utils zip libglu1-mesa openjdk-17-jdk-headless
@@ -34,8 +37,8 @@ build_apk:
     # 7. Add sdkmanager to PATH
     - export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
     
-    # 8. Accept Licenses and Install Required SDK Packages
-    - yes | sdkmanager --licenses
+    # 8. Accept Licenses (ignore exit code 141) and Install Required SDK Packages
+    - yes | sdkmanager --licenses || true
     - sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
   
   script:
