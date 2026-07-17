@@ -47,28 +47,31 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  IconData _getIconForColor(Color color) {
+    Widget _getIconForColor(Color color) {
     final hex = color.toARGB32() & 0xFFFFFF;
     switch (hex) {
-      case 0xE53935: return Icons.favorite_rounded;
-      case 0x1E88E5: return Icons.water_drop_rounded;
-      case 0x43A047: return Icons.eco_rounded;
-      case 0xFDD835: return Icons.wb_sunny_rounded;
-      case 0xFFFF8F00: return Icons.star_rounded;
-      case 0x8E24AA: return Icons.dark_mode_rounded;
-      case 0xEC407A: return Icons.auto_awesome_rounded;
-      case 0x00ACC1: return Icons.ac_unit_rounded;
-      case 0xB39DDB: return Icons.palette_rounded;
-      case 0xFF7043: return Icons.whatshot_rounded;
-      case 0x5C6BC0: return Icons.cloud_rounded;
-      case 0x009688: return Icons.diamond_rounded;
-      case 0x8D6E63: return Icons.cookie_rounded;
-      case 0xB71C1C: return Icons.bolt_rounded;
-      case 0xAD1457: return Icons.nightlight_rounded;
-      case 0x9E9D24: return Icons.grass_rounded;
-      default: return Icons.brightness_1_rounded;
+      case 0xE53935: return const Text('1', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0x1E88E5: return const Text('2', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0x43A047: return const Text('3', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0xFDD835: return const Text('4', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0xFFFF8F00: return const Text('5', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0x8E24AA: return const Text('6', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0xEC407A: return const Text('7', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0x00ACC1: return const Text('8', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0xB39DDB: return const Text('9', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0xFF7043: return const Text('10', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0x5C6BC0: return const Text('11', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0x009688: return const Text('12', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0x8D6E63: return const Text('13', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0xB71C1C: return const Text('14', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0xAD1457: return const Text('15', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0x9E9D24: return const Text('16', style: TextStyle(fontWeight: FontWeight.bold));
+      default: return const Text('?', style: TextStyle(fontWeight: FontWeight.bold));
     }
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -257,10 +260,12 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
           color: Colors.white.withOpacity(0.18),
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          _getIconForColor(color),
-          color: Colors.white.withOpacity(0.85),
-          size: widget.width * 0.36,
+         child: Container(
+          constraints: BoxConstraints(maxWidth: widget.width * 0.6, maxHeight: widget.height * 0.15),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: _getIconForColor(color),
+          ),
         ),
       ),
     );
