@@ -66,7 +66,9 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       case 0xB71C1C: return const Text('14', style: TextStyle(fontWeight: FontWeight.bold));
       case 0xAD1457: return const Text('15', style: TextStyle(fontWeight: FontWeight.bold));
       case 0x9E9D24: return const Text('16', style: TextStyle(fontWeight: FontWeight.bold));
-      default: return const Text('?', style: TextStyle(fontWeight: FontWeight.bold));
+      default: 
+        print('DEBUG: Unknown color found with hex: $hex'); // This prints to the log
+        return const Text('?', style: TextStyle(fontWeight: FontWeight.bold));
     }
   }
 
