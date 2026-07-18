@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.sidhant.watersort"
-    compileSdk = 34
+    compileSdk = flutter.compileSkdVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
