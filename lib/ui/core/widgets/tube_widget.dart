@@ -263,17 +263,12 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       ),
       alignment: Alignment.center,
       child: Container(
-        // Increased padding from 4 to 6 for a larger circle background
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(8), // Increased padding slightly
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.18),
           shape: BoxShape.circle,
         ),
-        child: FittedBox(
-          fit: BoxFit.contain,
-          // Removed maxWidth constraint to let the FittedBox scale freely within the circle
-          child: _getIconForColor(color),
-        ),
+        child: _getIconForColor(color), // No more FittedBox 
       ),
     );
   }
