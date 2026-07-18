@@ -39,7 +39,8 @@ build_apk:
     
     # 8. Accept Licenses (ignore exit code 141) and Install Required SDK Packages
     - yes | sdkmanager --licenses || true
-    - sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653" "cmdline-tools;latest"
+    # Install platform 34 and build tools 34.0.0 to satisfy audioplayers requirements
+    - sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
   
   script:
     - cd $CI_PROJECT_DIR
