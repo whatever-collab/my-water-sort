@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:watersort/ui/core/theme/app_colors.dart';
 import 'package:watersort/domain/models/tube.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class TubeWidget extends StatefulWidget {
   const TubeWidget({
@@ -31,6 +32,7 @@ class TubeWidget extends StatefulWidget {
 
 class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
@@ -39,15 +41,19 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
+    
+    // Configure audio player
+    _audioPlayer.setReleaseMode(ReleaseMode.stop);
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
-    Widget _getIconForColor(Color color) {
+  Widget _getIconForColor(Color color) {
     final hex = color.toARGB32() & 0xFFFFFF;
     String number = '?';
     
@@ -70,16 +76,17 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       case 0x9E9D24: number = '16'; break; // Olive
     }
 
-    return Center(
+    return Align(
+      alignment: Alignment.center,
       child: Text(
         number,
-        textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: 22, 
           fontWeight: FontWeight.bold,
           color: Colors.white,
-          fontFamily: 'sans-serif', // Clean, standard font
-          letterSpacing: 0.5, // Slightly spaced out for readability
+          fontFamily: 'sans-serif',
+          letterSpacing: 0.5,
+          textBaseline: TextBaseline.alphabetic,
         ),
       ),
     );
@@ -106,7 +113,17 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
         return Transform.translate(
           offset: Offset(0, yOffset),
           child: GestureDetector(
-            onTap: widget.onTap,
+            onTap: () async {
+              // Play sound on tap
+              try {
+                await _audioPlayer.play(AssetSource('audio/plop.ogg'));
+              } catch (e) {
+                // Silently fail if audio doesn't load
+              }
+              
+              // Call the original tap handler if provided
+              widget.onTap?.call();
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               height: widget.height,
@@ -267,14 +284,13 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       ),
       alignment: Alignment.center,
       child: Container(
-        // Fixed size for the circle background so they are all uniform
-        width: 36,
+        width: 36, 
         height: 36,
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.18),
           shape: BoxShape.circle,
         ),
-        child: _getIconForColor(color), // No more FittedBox 
+        child: _getIconForColor(color),
       ),
     );
   }
@@ -369,6 +385,5 @@ class _LiquidClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant _LiquidClipper oldDelegate) =>
-      oldDelegate.liquidHeight != liquidHeight;
+  bool shouldReclip(covariant _LiquidClipper oldClipper) => false;
 }
