@@ -70,13 +70,17 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       case 0x9E9D24: number = '16'; break; // Olive
     }
 
-    // Return text with a fixed, large font size
-    return Text(
-      number,
-      style: const TextStyle(
-        fontSize: 24, // Adjust this number to make it bigger/smaller
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
+    return Center(
+      child: Text(
+        number,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 22, 
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          fontFamily: 'sans-serif', // Clean, standard font
+          letterSpacing: 0.5, // Slightly spaced out for readability
+        ),
       ),
     );
   }
@@ -263,7 +267,9 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       ),
       alignment: Alignment.center,
       child: Container(
-        padding: const EdgeInsets.all(8), // Increased padding slightly
+        // Fixed size for the circle background so they are all uniform
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.18),
           shape: BoxShape.circle,
