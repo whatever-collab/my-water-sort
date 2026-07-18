@@ -43,6 +43,12 @@ build_apk:
   
   script:
     - cd $CI_PROJECT_DIR
+    
+    # Generate a debug keystore if it doesn't exist (for CI builds)
+    - if [ ! -f android/debug.keystore ]; then
+        keytool -genkeypair -alias androiddebugkey -keypass android -keystore android/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999;
+      fi
+      
     - flutter pub get
     - flutter build apk --release
   artifacts:
