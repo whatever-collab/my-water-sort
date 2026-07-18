@@ -47,27 +47,38 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  Widget _getIconForColor(Color color) {
+    Widget _getIconForColor(Color color) {
     final hex = color.toARGB32() & 0xFFFFFF;
+    String number = '?';
+    
     switch (hex) {
-      case 0xE53935: return const Text('1', style: TextStyle(fontWeight: FontWeight.bold)); // Red
-      case 0x1E88E5: return const Text('2', style: TextStyle(fontWeight: FontWeight.bold)); // Blue
-      case 0x43A047: return const Text('3', style: TextStyle(fontWeight: FontWeight.bold)); // Green
-      case 0xFDD835: return const Text('4', style: TextStyle(fontWeight: FontWeight.bold)); // Yellow
-      case 0xFF8F00: return const Text('5', style: TextStyle(fontWeight: FontWeight.bold)); // Orange
-      case 0x8E24AA: return const Text('6', style: TextStyle(fontWeight: FontWeight.bold)); // Purple
-      case 0xEC407A: return const Text('7', style: TextStyle(fontWeight: FontWeight.bold)); // Pink
-      case 0x00ACC1: return const Text('8', style: TextStyle(fontWeight: FontWeight.bold)); // Cyan
-      case 0xB39DDB: return const Text('9', style: TextStyle(fontWeight: FontWeight.bold)); // Lavender
-      case 0xFF7043: return const Text('10', style: TextStyle(fontWeight: FontWeight.bold)); // Coral
-      case 0x5C6BC0: return const Text('11', style: TextStyle(fontWeight: FontWeight.bold)); // Indigo
-      case 0x009688: return const Text('12', style: TextStyle(fontWeight: FontWeight.bold)); // Teal
-      case 0x8D6E63: return const Text('13', style: TextStyle(fontWeight: FontWeight.bold)); // Brown
-      case 0xB71C1C: return const Text('14', style: TextStyle(fontWeight: FontWeight.bold)); // Crimson
-      case 0xAD1457: return const Text('15', style: TextStyle(fontWeight: FontWeight.bold)); // Maroon
-      case 0x9E9D24: return const Text('16', style: TextStyle(fontWeight: FontWeight.bold)); // Olive
-      default: return const Text('?', style: TextStyle(fontWeight: FontWeight.bold));
+      case 0xE53935: number = '1'; break; // Red
+      case 0x1E88E5: number = '2'; break; // Blue
+      case 0x43A047: number = '3'; break; // Green
+      case 0xFDD835: number = '4'; break; // Yellow
+      case 0xFF8F00: number = '5'; break; // Orange
+      case 0x8E24AA: number = '6'; break; // Purple
+      case 0xEC407A: number = '7'; break; // Pink
+      case 0x00ACC1: number = '8'; break; // Cyan
+      case 0xB39DDB: number = '9'; break; // Lavender
+      case 0xFF7043: number = '10'; break; // Coral
+      case 0x5C6BC0: number = '11'; break; // Indigo
+      case 0x009688: number = '12'; break; // Teal
+      case 0x8D6E63: number = '13'; break; // Brown
+      case 0xB71C1C: number = '14'; break; // Crimson
+      case 0xAD1457: number = '15'; break; // Maroon
+      case 0x9E9D24: number = '16'; break; // Olive
     }
+
+    // Return text with a fixed, large font size
+    return Text(
+      number,
+      style: const TextStyle(
+        fontSize: 24, // Adjust this number to make it bigger/smaller
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    );
   }
 
   @override
