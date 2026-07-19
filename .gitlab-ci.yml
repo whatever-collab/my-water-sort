@@ -39,7 +39,6 @@ build_apk:
     
     # 8. Accept Licenses (ignore exit code 141) and Install Required SDK Packages
     - yes | sdkmanager --licenses || true
-    # Install platform 34 and build tools 34.0.0 to satisfy audioplayers requirements
     - sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
   
   script:
@@ -50,30 +49,17 @@ build_apk:
         keytool -genkeypair -alias androiddebugkey -keyalg RSA -keypass android -keystore android/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999;
       fi
       
+    # Get dependencies
     - flutter pub get
     
-    # Give Gradle more memory to prevent OOM errors
-    - export GRADLE_OPTS="-Xmx4g"
+    # Build using Gradle directly to avoid Flutter's APK location check
+    - chmod +x ./gradlew
+    - ./gradlew assembleRelease
     
-    - flutter build apk --release --verbose
-
-    # Copy the APK to the expected location if it's in the default Gradle output folder
-    - if [ -f android/build/app/outputs/apk/release/app-release.apk ]; then
-        mkdir -p build/app/outputs/flutter-apk
-        cp android/build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
-        echo "Copied APK to expected location."
-      elif [ -f build/app/outputs/apk/release/app-release.apk ]; then
-        mkdir -p build/app/outputs/flutter-apk
-        cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
-        echo "Copied APK to expected location."
-      else
-        echo "APK not found in standard locations. Listing files:"
-        find . -name "*.apk" -type f
-      fi
+    # Copy the APK to the root directory for easy downloading
+    - cp android/app/build/outputs/apk/release/app-release.apk app-release.apk
 
   artifacts:
     paths:
-      - build/app/outputs/flutter-apk/app-release.apk
-      - android/build/app/outputs/apk/release/app-release.apk
-      - build/app/outputs/apk/release/app-release.apk
+      - app-release.apk
     expire_in: 1 week
