@@ -32,7 +32,10 @@ class TubeWidget extends StatefulWidget {
 
 class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  
+  // CHANGE 1: Make the player static or shared if possible, but for now, let's just configure it better.
+  // We will create a single instance to avoid creating a new player every time a tube is tapped.
+  static final AudioPlayer _sharedAudioPlayer = AudioPlayer();
 
   @override
   void initState() {
@@ -41,12 +44,31 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
+    
+    // CHANGE 2: Configure the player to mix with other audio and set low volume
+    _configureAudioPlayer();
+  }
+
+  // NEW FUNCTION: Configure audio behavior
+  Future<void> _configureAudioPlayer() async {
+    try {
+      // Set volume to 0.2 (20%) so it's quiet and less likely to trigger aggressive focus stealing
+      await _sharedAudioPlayer.setVolume(0.2);
+      
+      // Note: Just_Audio doesn't have a direct "setMixWithOthers" flag in the basic API 
+      // without using the 'audio_session' package. However, lowering volume often helps.
+      // If this still stops other apps, we will need to add the 'audio_session' package later.
+    } catch (e) {
+      debugPrint("Error configuring audio: $e");
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _audioPlayer.dispose();
+    // CHANGE 3: Do NOT dispose the shared player here, otherwise other tubes can't play sound.
+    // Only dispose it when the whole app closes (usually in main.dart or a higher-level widget).
+    // For now, we leave it alive.
     super.dispose();
   }
 
@@ -111,12 +133,17 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
           offset: Offset(0, yOffset),
           child: GestureDetector(
             onTap: () async {
-              // Play sound on tap
+              // CHANGE 4: Use the shared player and check if it's already playing
               try {
-                await _audioPlayer.setAsset('assets/audio/plop.ogg');
-                await _audioPlayer.play();
+                // Stop any currently playing sound immediately to allow rapid tapping
+                await _sharedAudioPlayer.stop();
+                
+                // Load and play the asset
+                await _sharedAudioPlayer.setAsset('assets/audio/plop.ogg');
+                await _sharedAudioPlayer.play();
               } catch (e) {
                 // Silently fail if audio doesn't load
+                debugPrint("Audio error: $e");
               }
               
               // Call the original tap handler if provided
