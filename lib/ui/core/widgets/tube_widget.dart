@@ -33,9 +33,8 @@ class TubeWidget extends StatefulWidget {
 class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   
-  // CHANGE 1: Make the player static or shared if possible, but for now, let's just configure it better.
-  // We will create a single instance to avoid creating a new player every time a tube is tapped.
-  static final AudioPlayer _sharedAudioPlayer = AudioPlayer();
+  // Static shared player initialized once
+  static AudioPlayer? _sharedPlayer;
 
   @override
   void initState() {
@@ -45,30 +44,28 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       duration: const Duration(seconds: 3),
     )..repeat();
     
-    // CHANGE 2: Configure the player to mix with other audio and set low volume
-    _configureAudioPlayer();
+    // Initialize player only once
+    if (_sharedPlayer == null) {
+      _initPlayer();
+    }
   }
 
-  // NEW FUNCTION: Configure audio behavior
-  Future<void> _configureAudioPlayer() async {
+  Future<void> _initPlayer() async {
+    _sharedPlayer = AudioPlayer();
+    await _sharedPlayer!.setVolume(0.2); // Quiet volume
+    
+    // Pre-load the asset so there's no delay on tap
     try {
-      // Set volume to 0.2 (20%) so it's quiet and less likely to trigger aggressive focus stealing
-      await _sharedAudioPlayer.setVolume(0.2);
-      
-      // Note: Just_Audio doesn't have a direct "setMixWithOthers" flag in the basic API 
-      // without using the 'audio_session' package. However, lowering volume often helps.
-      // If this still stops other apps, we will need to add the 'audio_session' package later.
+      await _sharedPlayer!.setAsset('assets/audio/plop.ogg');
     } catch (e) {
-      debugPrint("Error configuring audio: $e");
+      debugPrint("Failed to preload audio: $e");
     }
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    // CHANGE 3: Do NOT dispose the shared player here, otherwise other tubes can't play sound.
-    // Only dispose it when the whole app closes (usually in main.dart or a higher-level widget).
-    // For now, we leave it alive.
+    // Do NOT dispose the shared player here
     super.dispose();
   }
 
@@ -77,22 +74,22 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
     String number = '?';
     
     switch (hex) {
-      case 0xE53935: number = '1'; break; // Red
-      case 0x1E88E5: number = '2'; break; // Blue
-      case 0x43A047: number = '3'; break; // Green
-      case 0xFDD835: number = '4'; break; // Yellow
-      case 0xFF8F00: number = '5'; break; // Orange
-      case 0x8E24AA: number = '6'; break; // Purple
-      case 0xEC407A: number = '7'; break; // Pink
-      case 0x00ACC1: number = '8'; break; // Cyan
-      case 0xB39DDB: number = '9'; break; // Lavender
-      case 0xFF7043: number = '10'; break; // Coral
-      case 0x5C6BC0: number = '11'; break; // Indigo
-      case 0x009688: number = '12'; break; // Teal
-      case 0x8D6E63: number = '13'; break; // Brown
-      case 0xB71C1C: number = '14'; break; // Crimson
-      case 0xAD1457: number = '15'; break; // Maroon
-      case 0x9E9D24: number = '16'; break; // Olive
+      case 0xE53935: number = '1'; break;
+      case 0x1E88E5: number = '2'; break;
+      case 0x43A047: number = '3'; break;
+      case 0xFDD835: number = '4'; break;
+      case 0xFF8F00: number = '5'; break;
+      case 0x8E24AA: number = '6'; break;
+      case 0xEC407A: number = '7'; break;
+      case 0x00ACC1: number = '8'; break;
+      case 0xB39DDB: number = '9'; break;
+      case 0xFF7043: number = '10'; break;
+      case 0x5C6BC0: number = '11'; break;
+      case 0x009688: number = '12'; break;
+      case 0x8D6E63: number = '13'; break;
+      case 0xB71C1C: number = '14'; break;
+      case 0xAD1457: number = '15'; break;
+      case 0x9E9D24: number = '16'; break;
     }
 
     return Align(
@@ -133,20 +130,12 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
           offset: Offset(0, yOffset),
           child: GestureDetector(
             onTap: () async {
-              // CHANGE 4: Use the shared player and check if it's already playing
-              try {
-                // Stop any currently playing sound immediately to allow rapid tapping
-                await _sharedAudioPlayer.stop();
-                
-                // Load and play the asset
-                await _sharedAudioPlayer.setAsset('assets/audio/plop.ogg');
-                await _sharedAudioPlayer.play();
-              } catch (e) {
-                // Silently fail if audio doesn't load
-                debugPrint("Audio error: $e");
+              // Play immediately without awaiting setAsset
+              if (_sharedPlayer != null) {
+                _sharedPlayer!.seek(Duration.zero); // Reset to start instantly
+                _sharedPlayer!.play(); // Non-blocking play
               }
               
-              // Call the original tap handler if provided
               widget.onTap?.call();
             },
             child: AnimatedContainer(
@@ -181,7 +170,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // Liquid columns
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: BorderRadius.vertical(
@@ -190,7 +178,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
                       ),
                       child: Stack(
                         children: [
-                          // Liquid Segments Columns
                           Positioned.fill(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -205,7 +192,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
                             ),
                           ),
 
-                          // Wave effect matching current filled height
                           if (widget.tube.colors.isNotEmpty)
                             Positioned(
                               bottom: (widget.tube.colors.length / widget.tube.capacity) * (widget.height - 12) - 4,
@@ -221,7 +207,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
                               ),
                             ),
 
-                          // Bubbles rising inside liquid columns
                           if (widget.tube.colors.isNotEmpty)
                             Positioned.fill(
                               child: ClipPath(
@@ -237,7 +222,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
                                 ),
                             ),
 
-                          // Sheen reflection
                           Positioned(
                             top: 4,
                             left: 4,
@@ -262,7 +246,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
                     ),
                   ),
 
-                  // Lip/Rim
                   Positioned(
                     top: -2.5,
                     left: -2,
@@ -325,10 +308,7 @@ class _BubblePainter extends CustomPainter {
   final double animationValue;
   final bool isFast;
 
-  _BubblePainter({
-    required this.animationValue,
-    required this.isFast,
-  });
+  _BubblePainter({required this.animationValue, required this.isFast});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -360,11 +340,7 @@ class _WavePainter extends CustomPainter {
   final double animationValue;
   final bool isFast;
 
-  _WavePainter({
-    required this.color,
-    required this.animationValue,
-    required this.isFast,
-  });
+  _WavePainter({required this.color, required this.animationValue, required this.isFast});
 
   @override
   void paint(Canvas canvas, Size size) {
