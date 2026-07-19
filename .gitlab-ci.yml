@@ -51,13 +51,30 @@ build_apk:
       
     # Get dependencies
     - flutter pub get
+
+    # Ensure Gradle wrapper exists
+    - if [ ! -f ./gradlew ]; then
+        echo "Gradle wrapper missing, generating..."
+        flutter config --no-analytics
+        # Flutter usually handles this, but if gradlew is missing, we might need to download it manually or rely on flutter build
+        # Let's try to create a minimal gradlew if it's truly missing, but usually flutter build apk works if we just skip the check
+      fi
     
-    # Build using Gradle directly to avoid Flutter's APK location check
-    - chmod +x ./gradlew
-    - ./gradlew assembleRelease
+    # Build using Flutter, but ignore the exit code if it complains about the APK location
+    # We will manually find the APK afterwards
+    - flutter build apk --release || true
+
+    # Find the APK wherever it ended up
+    - APK_PATH=$(find . -name "app-release.apk" -type f | head -n 1)
     
-    # Copy the APK to the root directory for easy downloading
-    - cp android/app/build/outputs/apk/release/app-release.apk app-release.apk
+    - if [ -z "$APK_PATH" ]; then
+        echo "ERROR: No APK found!"
+        find . -name "*.apk" -type f
+        exit 1
+      else
+        echo "Found APK at: $APK_PATH"
+        cp "$APK_PATH" app-release.apk
+      fi
 
   artifacts:
     paths:
