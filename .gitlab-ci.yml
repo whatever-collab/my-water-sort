@@ -51,8 +51,29 @@ build_apk:
       fi
       
     - flutter pub get
+    
+    # Give Gradle more memory to prevent OOM errors
+    - export GRADLE_OPTS="-Xmx4g"
+    
     - flutter build apk --release --verbose
+
+    # Copy the APK to the expected location if it's in the default Gradle output folder
+    - if [ -f android/build/app/outputs/apk/release/app-release.apk ]; then
+        mkdir -p build/app/outputs/flutter-apk
+        cp android/build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
+        echo "Copied APK to expected location."
+      elif [ -f build/app/outputs/apk/release/app-release.apk ]; then
+        mkdir -p build/app/outputs/flutter-apk
+        cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
+        echo "Copied APK to expected location."
+      else
+        echo "APK not found in standard locations. Listing files:"
+        find . -name "*.apk" -type f
+      fi
+
   artifacts:
     paths:
+      - build/app/outputs/flutter-apk/app-release.apk
+      - android/build/app/outputs/apk/release/app-release.apk
       - build/app/outputs/apk/release/app-release.apk
     expire_in: 1 week
