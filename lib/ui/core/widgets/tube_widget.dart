@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:watersort/ui/core/theme/app_colors.dart';
 import 'package:watersort/domain/models/tube.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 
 class TubeWidget extends StatefulWidget {
   const TubeWidget({
@@ -41,9 +41,6 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
-    
-    // Configure audio player
-    _audioPlayer.setReleaseMode(ReleaseMode.stop);
   }
 
   @override
@@ -116,7 +113,8 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
             onTap: () async {
               // Play sound on tap
               try {
-                await _audioPlayer.play(AssetSource('audio/plop.ogg'));
+                await _audioPlayer.setAsset('assets/audio/plop.ogg');
+                await _audioPlayer.play();
               } catch (e) {
                 // Silently fail if audio doesn't load
               }
