@@ -24,8 +24,8 @@ void main() async {
       flags: AndroidAudioFlags.none,
       usage: AndroidAudioUsage.game,
     ),
-    androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransient,
-    androidWillPauseWhenDucked: false,
+    androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransientMayDuck,
+    androidWillPauseWhenDucked: false, // Ensure we don't pause ourselves
   ));
 
   final hiveService = HiveService();
