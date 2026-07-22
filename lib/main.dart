@@ -24,7 +24,7 @@ void main() async {
       flags: AndroidAudioFlags.none,
       usage: AndroidAudioUsage.game,
     ),
-    androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransientMayDuck,
+    androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransient,
     androidWillPauseWhenDucked: false,
   ));
 
