@@ -52,7 +52,7 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
 
   Future<void> _initPlayer() async {
     _sharedPlayer = AudioPlayer();
-    await _sharedPlayer!.setVolume(0.2); // Quiet volume
+    await _sharedPlayer!.setVolume(0.1); // Very quiet volume
     
     // Pre-load the asset so there's no delay on tap
     try {
