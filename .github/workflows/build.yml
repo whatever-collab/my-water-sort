@@ -15,7 +15,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Flutter
@@ -26,6 +26,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Enable Gradle Daemon
+        run: echo "org.gradle.daemon=true" >> android/gradle.properties
 
       - name: Build APK
         run: flutter build apk --release
