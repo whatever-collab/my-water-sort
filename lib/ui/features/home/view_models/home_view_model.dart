@@ -1,23 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:watersort/data/repositories/progress_repository.dart';
 
-class HomeViewModel extends ChangeNotifier {
+// Define the state class
+class HomeViewState {
+  final bool isLoading;
+  final dynamic progress; // Placeholder for whatever progress object was used
+  
+  HomeViewState({this.isLoading = false, this.progress});
+}
+
+class HomeViewModel extends StateNotifier<HomeViewState> {
   final ProgressRepository _progressRepository;
 
-  // Fixed: Parameter name no longer starts with underscore
   HomeViewModel({required ProgressRepository progressRepository})
-      : _progressRepository = progressRepository;
+      : _progressRepository = progressRepository,
+        super(HomeViewState());
 
-  int get currentLevel => _progressRepository.currentLevel;
-  int get highestLevel => _progressRepository.highestLevel;
-
-  Future<void> incrementLevel() async {
-    await _progressRepository.incrementLevel();
-    notifyListeners();
-  }
-
-  Future<void> resetProgress() async {
-    await _progressRepository.resetProgress();
-    notifyListeners();
+  Future<void> loadProgress() async {
+    state = HomeViewState(isLoading: true);
+    // Simulate loading or fetch real data
+    // For now, just set a dummy progress or null
+    state = HomeViewState(isLoading: false, progress: null);
   }
 }
