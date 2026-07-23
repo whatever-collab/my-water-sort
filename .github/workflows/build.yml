@@ -7,8 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Increase default timeout from 6 minutes to 30 minutes
-    timeout-minutes: 30
+    timeout-minutes: 45 # Increased timeout significantly
 
     steps:
       - name: Checkout code
@@ -33,12 +32,27 @@ jobs:
         run: flutter clean
 
       - name: Build APK
-        # Disable the watcher to prevent resource hangs and add verbose output
         env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false'
+          # Disable Gradle daemon and parallel execution to prevent hangs
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Xmx4g'
         run: |
-          flutter build apk --release --verbose
-          echo "Build finished successfully"
+          echo "Starting build..."
+          flutter build apk --release --verbose > build_log.txt 2>&1 || exit 1
+          echo "Build completed."
+          
+      - name: Check Build Log for Errors
+        run: |
+          if grep -q "FAILURE:" build_log.txt; then
+            echo "Found FAILURE in build log:"
+            grep -A 20 "FAILURE:" build_log.txt
+            exit 1
+          fi
+          if grep -q "BUILD FAILED" build_log.txt; then
+            echo "Found BUILD FAILED in build log:"
+            tail -50 build_log.txt
+            exit 1
+          fi
+          echo "No obvious failures found in log."
 
       - name: List Output Directory
         run: ls -la build/app/outputs/flutter-apk/ || echo "Directory not found"
