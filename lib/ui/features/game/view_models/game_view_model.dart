@@ -185,3 +185,172 @@ class GameViewModel extends StateNotifier<GameViewModelState> {
         level: level,
         isLoading: false,
       );
+
+      if (_shouldHaveTimer(isRandom: true, levelNumber: -1, difficulty: difficulty)) {
+        _startTimer(_calculateTimerDuration(level.colorCount));
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to load random level: $e',
+      );
+    }
+  }
+
+  bool isValidPour(int fromIndex, int toIndex) {
+    if (state.level == null) return false;
+    if (fromIndex == toIndex) return false;
+    if (fromIndex < 0 || fromIndex >= state.level!.tubes.length) return false;
+    if (toIndex < 0 || toIndex >= state.level!.tubes.length) return false;
+
+    final fromTube = state.level!.tubes[fromIndex];
+    final toTube = state.level!.tubes[toIndex];
+
+    if (fromTube.isEmpty || toTube.isFull) return false;
+
+    final colorToMove = fromTube.topColor!;
+    return toTube.canReceive(colorToMove);
+  }
+
+  void selectTube(int index) {
+    if (state.isComplete || state.isTimeOut || state.level == null || state.pouringFromIndex != null) return;
+
+    if (state.selectedTubeIndex == null) {
+      if (!state.level!.tubes[index].isEmpty) {
+        HapticFeedback.lightImpact();
+        state = state.copyWith(selectedTubeIndex: () => index);
+      }
+    } else {
+      if (state.selectedTubeIndex == index) {
+        HapticFeedback.lightImpact();
+        state = state.copyWith(selectedTubeIndex: () => null);
+      } else {
+        if (isValidPour(state.selectedTubeIndex!, index)) {
+          _pourWater(state.selectedTubeIndex!, index);
+        } else {
+          if (!state.level!.tubes[index].isEmpty) {
+            HapticFeedback.lightImpact();
+            state = state.copyWith(selectedTubeIndex: () => index);
+          } else {
+            HapticFeedback.lightImpact();
+            state = state.copyWith(selectedTubeIndex: () => null);
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _pourWater(int fromIndex, int toIndex) async {
+    if (state.level == null) return;
+
+    HapticFeedback.mediumImpact();
+
+    final fromTube = state.level!.tubes[fromIndex];
+    final toTube = state.level!.tubes[toIndex];
+
+    final colorToMove = fromTube.topColor!;
+    
+    int countToMove = 0;
+    for (int i = fromTube.colors.length - 1; i >= 0; i--) {
+      if (fromTube.colors[i] == colorToMove) {
+        countToMove++;
+      } else {
+        break;
+      }
+    }
+
+    final availableSpace = toTube.capacity - toTube.colors.length;
+    final pourCount = countToMove.clamp(0, availableSpace);
+
+    if (pourCount == 0) {
+      state = state.copyWith(
+        selectedTubeIndex: () => null,
+      );
+      return;
+    }
+
+    // Save snapshot before pouring
+    final snapshot = MoveSnapshot(
+      tubes: state.level!.tubes.map((t) => Tube(colors: List<Color>.from(t.colors), capacity: t.capacity)).toList(),
+      moveCount: state.moveCount,
+    );
+
+    // Set pouring indices for animation
+    state = state.copyWith(
+      pouringFromIndex: () => fromIndex,
+      pouringToIndex: () => toIndex,
+    );
+
+    // Brief delay for animation
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    final newFromColors = List<Color>.from(fromTube.colors)
+      ..removeRange(fromTube.colors.length - pourCount, fromTube.colors.length);
+    final newToColors = List<Color>.from(toTube.colors)
+      ..addAll(List.filled(pourCount, colorToMove));
+
+    final newTubes = List<Tube>.from(state.level!.tubes);
+    newTubes[fromIndex] = fromTube.copyWith(colors: newFromColors);
+    newTubes[toIndex] = toTube.copyWith(colors: newToColors);
+
+    final newLevel = state.level!.copyWith(tubes: newTubes);
+    final isComplete = newLevel.isComplete;
+
+    if (isComplete) {
+      _timer?.cancel();
+      HapticFeedback.heavyImpact();
+    }
+
+    state = state.copyWith(
+      level: newLevel,
+      moveCount: state.moveCount + 1,
+      selectedTubeIndex: () => null,
+      pouringFromIndex: () => null,
+      pouringToIndex: () => null,
+      isComplete: isComplete,
+      moveHistory: [...state.moveHistory, snapshot],
+    );
+  }
+
+  Future<void> completeLevel() async {
+    if (state.level == null || !state.isComplete) return;
+    if (state.isRandomMode) {
+      await _progressRepository.addRandomLevelMoves(state.moveCount);
+    } else {
+      await _progressRepository.completeLevel(state.moveCount);
+    }
+  }
+
+  void resetLevel() {
+    if (state.level != null) {
+      if (state.isRandomMode) {
+        loadRandomLevel(state.randomDifficulty ?? 'Easy', seed: state.randomSeed);
+      } else {
+        loadLevel(state.level!.levelNumber);
+      }
+    }
+  }
+
+  void undoMove() {
+    if (!state.canUndo || state.level == null) return;
+
+    HapticFeedback.lightImpact();
+
+    final snapshot = state.moveHistory.last;
+    final newHistory = List<MoveSnapshot>.from(state.moveHistory)..removeLast();
+
+    state = state.copyWith(
+      level: state.level!.copyWith(tubes: snapshot.tubes),
+      moveCount: snapshot.moveCount,
+      selectedTubeIndex: () => null,
+      isComplete: false,
+      moveHistory: newHistory,
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+}
