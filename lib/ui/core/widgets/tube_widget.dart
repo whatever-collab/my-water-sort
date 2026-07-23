@@ -70,7 +70,7 @@ class _TubeWidgetState extends State<TubeWidget> with SingleTickerProviderStateM
   }
 
   Widget _getIconForColor(Color color) {
-    final hex = color.toARGB32() & 0xFFFFFF;
+    final hex = color.value & 0xFFFFFF;
     String number = '?';
     
     switch (hex) {
