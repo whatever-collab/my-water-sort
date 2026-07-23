@@ -1,21 +1,38 @@
-import 'package:watersort/data/services/hive_service.dart';
+import 'package:watersort/domain/models/user_progress.dart';
+import '../services/hive_service.dart';
 
 class ProgressRepository {
-  final HiveService hiveService;
+  // Fixed: Parameter name no longer starts with underscore
+  ProgressRepository({required HiveService hiveService}) : _hiveService = hiveService;
 
-  ProgressRepository({required this.hiveService});
+  final HiveService _hiveService;
+  UserProgress? _cachedProgress;
 
-  int get currentLevel => hiveService.getCurrentLevel();
-  int get highestLevel => hiveService.getHighestLevel();
+  Future<UserProgress> getProgress() async {
+    if (_cachedProgress != null) return _cachedProgress!;
+    _cachedProgress = await _hiveService.getProgress();
+    return _cachedProgress!;
+  }
 
-  Future<void> incrementLevel() async {
-    await hiveService.setCurrentLevel(currentLevel + 1);
-    if (currentLevel > highestLevel) {
-      await hiveService.setHighestLevel(currentLevel);
-    }
+  Future<void> saveProgress(UserProgress progress) async {
+    _cachedProgress = progress;
+    await _hiveService.saveProgress(progress);
+  }
+
+  Future<void> completeLevel(int moves) async {
+    final current = await getProgress();
+    final updated = current.incrementLevel().addMoves(moves);
+    await saveProgress(updated);
+  }
+
+  Future<void> addRandomLevelMoves(int moves) async {
+    final current = await getProgress();
+    final updated = current.addMoves(moves);
+    await saveProgress(updated);
   }
 
   Future<void> resetProgress() async {
-    await hiveService.resetData();
+    _cachedProgress = null;
+    await _hiveService.clearProgress();
   }
 }
