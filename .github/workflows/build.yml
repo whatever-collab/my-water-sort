@@ -30,8 +30,16 @@ jobs:
 
       - name: Build APK
         env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Xmx4g'
-        run: flutter build apk --release --verbose
+          # Reduced heap size to 2GB to prevent OOM on CI runners
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Xmx2g -XX:+UseSerialGC'
+        run: |
+          echo "Starting build..."
+          flutter build apk --release --verbose
+          echo "Build command finished."
+
+      - name: Check for Killed Process
+        run: |
+          dmesg | grep -i "killed process" || echo "No OOM kills detected in dmesg"
 
       - name: List Output Directory
         run: ls -la build/app/outputs/flutter-apk/ || echo "Directory not found"
