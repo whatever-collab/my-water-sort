@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45 # Increased timeout significantly
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
@@ -28,31 +28,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Clean previous builds
-        run: flutter clean
-
       - name: Build APK
         env:
-          # Disable Gradle daemon and parallel execution to prevent hangs
           GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Xmx4g'
-        run: |
-          echo "Starting build..."
-          flutter build apk --release --verbose > build_log.txt 2>&1 || exit 1
-          echo "Build completed."
-          
-      - name: Check Build Log for Errors
-        run: |
-          if grep -q "FAILURE:" build_log.txt; then
-            echo "Found FAILURE in build log:"
-            grep -A 20 "FAILURE:" build_log.txt
-            exit 1
-          fi
-          if grep -q "BUILD FAILED" build_log.txt; then
-            echo "Found BUILD FAILED in build log:"
-            tail -50 build_log.txt
-            exit 1
-          fi
-          echo "No obvious failures found in log."
+        run: flutter build apk --release --verbose
 
       - name: List Output Directory
         run: ls -la build/app/outputs/flutter-apk/ || echo "Directory not found"
