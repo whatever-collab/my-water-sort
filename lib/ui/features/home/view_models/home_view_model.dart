@@ -1,25 +1,48 @@
-import 'package:flutter/foundation.dart';
-import 'package:watersort/data/repositories/progress_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Define the state class
-class HomeViewState {
+import 'package:watersort/data/repositories/progress_repository.dart';
+import 'package:watersort/domain/models/user_progress.dart';
+
+class HomeViewModelState {
+  const HomeViewModelState({
+    this.progress,
+    this.isLoading = false,
+  });
+
+  final UserProgress? progress;
   final bool isLoading;
-  final dynamic progress; // Placeholder for whatever progress object was used
-  
-  HomeViewState({this.isLoading = false, this.progress});
+
+  HomeViewModelState copyWith({
+    UserProgress? progress,
+    bool? isLoading,
+  }) {
+    return HomeViewModelState(
+      progress: progress ?? this.progress,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
 }
 
-class HomeViewModel extends StateNotifier<HomeViewState> {
-  final ProgressRepository _progressRepository;
-
+class HomeViewModel extends StateNotifier<HomeViewModelState> {
+  // Fixed: Parameter name no longer starts with underscore
   HomeViewModel({required ProgressRepository progressRepository})
       : _progressRepository = progressRepository,
-        super(HomeViewState());
+        super(const HomeViewModelState());
+
+  final ProgressRepository _progressRepository;
 
   Future<void> loadProgress() async {
-    state = HomeViewState(isLoading: true);
-    // Simulate loading or fetch real data
-    // For now, just set a dummy progress or null
-    state = HomeViewState(isLoading: false, progress: null);
+    state = state.copyWith(isLoading: true);
+    try {
+      final progress = await _progressRepository.getProgress();
+      state = state.copyWith(progress: progress, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  Future<void> resetProgress() async {
+    await _progressRepository.resetProgress();
+    state = const HomeViewModelState(progress: UserProgress());
   }
 }
